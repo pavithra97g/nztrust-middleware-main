@@ -1,0 +1,26 @@
+meta {
+  name: Delete Secure Task
+  type: http
+  seq: 5
+}
+
+delete {
+  url: http://localhost:8080/api/secure/tasks/{{id}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OGU3NmQ5ZmJiNzg0ZGE4OWI0NTZiZiIsImVtYWlsIjoidGV0c0BnbWFpbC5jb20iLCJuYW1lIjoiVGVzdCBOYW1lIiwiaWF0IjoxNzU0ODQyMzQ2LCJleHAiOjE3NTQ5Mjg3NDZ9.bP8RObwiAun1VyaMUtgHcwPuJRu3GeFuMMuU847p4xE
+}
+
+body:json {
+  {
+    "email":"tets@gmail.com",
+    "password":"test@123"
+  }
+}
+
+vars:pre-request {
+  id: sdsdsd
+}

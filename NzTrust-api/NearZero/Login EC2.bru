@@ -1,0 +1,18 @@
+meta {
+  name: Login EC2
+  type: http
+  seq: 7
+}
+
+post {
+  url: http://34.242.137.151:8080/api/login
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "email":"tets@gmail.com",
+    "password":"test@123"
+  }
+}
