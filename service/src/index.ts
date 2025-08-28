@@ -1,30 +1,41 @@
-import express, { Request, Response, NextFunction } from 'express';
-import { config } from './config';
-import authRoutes from './routes/auth';
-import dataRoutes from './routes/data';
+import express, { Request, Response, NextFunction } from "express";
+import authRoutes from "./routes/auth";
+import { connectDB } from "./database";
+import { authenticateToken, validateLogin } from "./middleware";
+import { login } from "./controllers/authController";
+import { getData } from "./controllers/dataController";
+import { createTask, deleteTask, getTasks } from "./controllers/taskController";
 
 const app = express();
+(async () => {
+  try {
+    console.log("🔌 Connecting to database...");
+    await connectDB();
+    console.log("Database connected successfully");
+  } catch (error) {
+    console.error("Database connected failed", error);
+    process.exit(1);
+  }
+})();
 
-app.use(express.json());
+app.get("/", (req, res) => {
+  console.log(`${req.method} ${req.originalUrl}`);
 
-//* Routes
-app.use('/api', authRoutes);
-app.use('/', dataRoutes);
-
-//* Error handling middleware
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong!' });
+  res.send(` Hello ${req.method} ${req.originalUrl}`);
 });
 
-//! 404 handler
-app.use('*', (req: Request, res: Response) => {
-  res.status(404).json({ error: 'Route not found' });
+app.use(express.json()); 
+app.use(express.urlencoded({ extended: true })); 
+
+app.post("/login", validateLogin, login);
+app.get("/data", authenticateToken, getData);
+
+app.post("/secure/tasks", authenticateToken, createTask);
+app.get("/secure/tasks", authenticateToken, getTasks);
+app.delete("/secure/tasks/:taskId", authenticateToken, deleteTask); 
+
+app.listen(5000, () => {
+  console.log("Backend service listening on port 5000");
 });
 
-//* Start server
-app.listen(config.PORT, () => {
-  console.log(`Service running on port ${config.PORT}`);
-});
-
-export default app;
+app.use("/auth", authRoutes);

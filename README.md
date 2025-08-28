@@ -4,7 +4,7 @@ Added
 - Added todo page
 
 📊 Why This Is Better than Just a WAF
-Your middleware:
+Your middleware interface:
 
 Is customizable — you control the risk logic
 
@@ -14,7 +14,7 @@ Is observed via Prometheus & Grafana
 
 Is privacy aware, as it logs only essential metadata
 
-| Feature                         | Middleware Role                           |
+| Feature                         | interface Role                           |
 | ------------------------------- | ----------------------------------------- |
 | Request filtering               | YES — based on real-time scoring          |
 | Protect `service1` from bots    | YES — blocks `curl`, `postman`, etc.      |

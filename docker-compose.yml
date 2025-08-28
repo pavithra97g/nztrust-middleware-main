@@ -1,26 +1,37 @@
-version: '3.8'
-
 services:
-  middleware:
-    build: ./middleware
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "3001:80"
+    depends_on:
+      - interface
+  interface:
+    build: ./interface
     ports:
       - "8080:8080"
-    depends_on:
-      - service
 
-  service:
+  service1:
     build: ./service
     ports:
       - "5000:5000"
+    depends_on:
+      - interface
 
   prometheus:
     image: prom/prometheus
+    container_name: prometheus
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
 
+
   grafana:
     image: grafana/grafana
     ports:
       - "3000:3000"
+
+
