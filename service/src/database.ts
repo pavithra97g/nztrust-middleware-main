@@ -1,34 +1,72 @@
-import { User, RegisterRequest } from './types';
-import bcrypt from 'bcrypt';
-import { config } from './config';
+import mongoose, { Schema, model } from "mongoose";
+import bcrypt from "bcrypt";
+import { RegisterRequest, User as UserType } from "./types";
+import { config } from "./config";
 
-//ToDo: Add DB connection
-const users: User[] = [];
-let userIdCounter = 1;
+// MongoDB Connection
+const MONGO_URI = config.MONGO_URI as string;
+const DB_NAME = config.DB_NAME as string;
 
-export const findUserByEmail = (email: string): User | undefined => {
-  return users.find(user => user.email === email);
+if (!MONGO_URI) {
+  throw new Error("MONGO_URI is missing from environment variables.");
+}
+
+export const connectDB = async () => {
+  if (mongoose.connection.readyState >= 1) {
+    console.log("Using existing MongoDB connection.");
+    return;
+  }
+
+  try {
+    await mongoose.connect(MONGO_URI, { dbName: DB_NAME });
+    console.log(`Connected to MongoDB: ${DB_NAME}`);
+  } catch (error) {
+        console.log(`Failed to Connect to MongoDB: ${DB_NAME}`);
+
+    console.error("MongoDB Connection Error :", error);
+    throw new Error("Failed to connect to MongoDB.");
+  }
 };
 
-export const createUser = async (userData: RegisterRequest): Promise<User> => {
-  const hashedPassword = await bcrypt.hash(userData.password, config.BCRYPT_ROUNDS);
-  
-  const newUser: User = {
-    id: userIdCounter++,
+// Mongoose User Schema
+const userSchema = new Schema<UserType>({
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  name: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+});
+
+const UserModel = model<UserType>("User", userSchema);
+
+// CRUD operations
+
+export const findUserByEmail = async (
+  email: string
+): Promise<UserType | null> => {
+  return await UserModel.findOne({ email });
+};
+
+export const findUserById = async (id: string): Promise<UserType | null> => {
+  return await UserModel.findById(id);
+};
+
+export const getAllUsers = async (): Promise<UserType[]> => {
+  return await UserModel.find();
+};
+
+export const createUser = async (
+  userData: RegisterRequest
+): Promise<UserType> => {
+  const hashedPassword = await bcrypt.hash(
+    userData.password,
+    config.BCRYPT_ROUNDS
+  );
+
+  const newUser = new UserModel({
     email: userData.email,
     password: hashedPassword,
     name: userData.name,
-    createdAt: new Date()
-  };
-  
-  users.push(newUser);
-  return newUser;
-};
+  });
 
-export const findUserById = (id: number): User | undefined => {
-  return users.find(user => user.id === id);
-};
-
-export const getAllUsers = (): User[] => {
-  return users;
+  return await newUser.save();
 };

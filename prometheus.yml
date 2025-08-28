@@ -2,6 +2,7 @@ global:
   scrape_interval: 10s
 
 scrape_configs:
-  - job_name: 'middleware'
+  - job_name: 'interface'
     static_configs:
-      - targets: ['middleware:8080']
+      - targets: ['interface:8080']
+    metrics_path: '/metrics'

@@ -1,16 +1,16 @@
-import { Request, Response } from 'express';
-import { validationResult } from 'express-validator';
-import { LoginRequest, RegisterRequest, AuthenticatedRequest } from '../types';
-import { findUserByEmail, createUser } from '../database';
-import { generateToken, comparePassword } from '../utils';
+import { Request, Response } from "express";
+import { validationResult } from "express-validator";
+import { LoginRequest, RegisterRequest, AuthenticatedRequest } from "../types";
+import { findUserByEmail, createUser } from "../database";
+import { generateToken, comparePassword } from "../utils";
 
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      res.status(400).json({ 
-        error: 'Validation failed', 
-        details: errors.array() 
+      res.status(400).json({
+        error: "Validation failed",
+        details: errors.array(),
       });
       return;
     }
@@ -18,8 +18,9 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     const { email, password, name }: RegisterRequest = req.body;
 
     // Check if user already exists
-    if (findUserByEmail(email)) {
-      res.status(409).json({ error: 'User already exists' });
+    const existingUser = await findUserByEmail(email);
+    if (existingUser) {
+      res.status(409).json({ error: "User already exists" });
       return;
     }
 
@@ -28,17 +29,17 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     const token = generateToken(newUser);
 
     res.status(201).json({
-      message: 'User registered successfully',
+      message: "User registered successfully",
       token,
       user: {
-        id: newUser.id,
+        id: newUser._id, // MongoDB uses _id
         email: newUser.email,
-        name: newUser.name
-      }
+        name: newUser.name,
+      },
     });
   } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Registration error:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -46,9 +47,9 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      res.status(400).json({ 
-        error: 'Validation failed', 
-        details: errors.array() 
+      res.status(400).json({
+        error: "Validation failed",
+        details: errors.array(),
       });
       return;
     }
@@ -56,16 +57,16 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     const { email, password }: LoginRequest = req.body;
 
     // Find user
-    const user = findUserByEmail(email);
+    const user = await findUserByEmail(email);
     if (!user) {
-      res.status(401).json({ error: 'Invalid credentials' });
+      res.status(401).json({ error: "Invalid credentials" });
       return;
     }
 
     // Verify password
     const isValidPassword = await comparePassword(password, user.password);
     if (!isValidPassword) {
-      res.status(401).json({ error: 'Invalid credentials' });
+      res.status(401).json({ error: "Invalid credentials" });
       return;
     }
 
@@ -73,47 +74,51 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     const token = generateToken(user);
 
     res.json({
-      message: 'Login successful',
+      message: "Login successful",
       token,
       user: {
-        id: user.id,
+        id: user._id,
         email: user.email,
-        name: user.name
-      }
+        name: user.name,
+      },
     });
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Login error:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
-export const refreshToken = (req: AuthenticatedRequest, res: Response): void => {
+export const refreshToken = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.user) {
-      res.status(401).json({ error: 'User not authenticated' });
+      res.status(401).json({ error: "User not authenticated" });
       return;
     }
 
-    const user = findUserByEmail(req.user.email);
+    const user = await findUserByEmail(req.user.email);
     if (!user) {
-      res.status(404).json({ error: 'User not found' });
+      res.status(404).json({ error: "User not found" });
       return;
     }
 
     const newToken = generateToken(user);
-    
+
     res.json({
-      message: 'Token refreshed',
-      token: newToken
+      message: "Token refreshed",
+      token: newToken,
     });
   } catch (error) {
-    console.error('Token refresh error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Token refresh error:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
-export const logout = (req: AuthenticatedRequest, res: Response): void => {
-  res.json({ 
-    message: 'Logged out successfully. Please remove the token from client storage.' 
+export const logout = (_req: AuthenticatedRequest, res: Response): void => {
+  res.json({
+    message:
+      "Logged out successfully. Please remove the token from client storage.",
   });
 };
